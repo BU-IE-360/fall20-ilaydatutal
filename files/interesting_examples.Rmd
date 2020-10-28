@@ -33,9 +33,11 @@ opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
     
     The Prophet algorithm is an additive model, which means that it detects the following trend and seasonality from the data first, then combine them together to get the forecasted values.
     
-    >The prophet model has the form:
-    >y(t)=g(t)+s(t)+h(t)+εt
-    >where g(t) is the trend function. s (t) is the periodic component (seasonalities) h(t) represents holidays/events which occur on potentially irregular basis. εt is the error term (which is often assumed to be normally distributed)
+    The prophet model has the form:
+    
+    >y(t)=g(t)+s(t)+h(t)+ε 
+    
+    where g(t) is the trend function. s(t) is the periodic component (seasonalities) h(t) represents holidays/events which occur on potentially irregular basis. εt is the error term (which is often assumed to be normally distributed)
     
 --------------------------------------------------------------------------------------------------------------------------------------------------------   
     
