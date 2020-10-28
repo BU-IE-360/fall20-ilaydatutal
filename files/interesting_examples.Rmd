@@ -1,0 +1,47 @@
+---
+title: "Interesting Forecasting Applications with R"
+author: "Fatma İlayda Tutal - IE360 - Fall 2020"
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+1. [Time Series Forecasting Using ARIMA Models](https://blogs.oracle.com/datascience/introduction-to-forecasting-with-arima-in-r)
+
+    This example is important because it introduces the forecasting methodology using ARIMA models in R. The steps are examining data, decomposing data, testing stationarity, autocorrelations and choosing model order, fitting an ARIMA model, evaluating and iterating.
+    
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2. [Dynamic Linear Models](https://towardsdatascience.com/an-overview-of-time-series-forecasting-models-a2fa7a358fcb)
+
+    Dynamic linear models are type of linear regression model, but the parameters are time-varying not static. In order to control dynamic physical systems, unknown quantities such as velocity and position need to be estimated from noisy measurements such as readings from various sensors. The state of the system evolves from one state (e.g. position and speed at time t) to another (position and speed at time t+1) according to a known transition equation, possibly including random perturbations and intervention effects. So, a dynamic linear model can handle non-stationary processes, missing values and non-uniform sampling as well as observations with varying accuracies. **dlm** package is used for this modelling.
+    
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3. [Exponential Smoothing Forecasting](https://www.statisticshowto.com/exponential-smoothing/)
+
+    Exponential smoothing of time series data assigns exponentially decreasing weights for most current to oldest observations. So the older the data, the less weight. Exponential smoothing is used for short term forecasting mostly.
+    
+    Alpha the smoothing constant, a value from 0 to 1. When α is close to zero, smoothing happens more gradually. The best value for α is the one that results in the smallest mean squared error (MSE).
+    
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4. [Time Series Forecasting Using Prophet Algorithm](https://blog.exploratory.io/an-introduction-to-time-series-forecasting-with-prophet-package-in-exploratory-129ed0c12112)
+
+    I was curious when I saw the name of this algorithm to be honest. Sean J. Taylor and Ben Letham from Facebook introduced the ‘Prophet’ algorithm in 2017. It is an algorithm to build forecasting models for time series data. Unlike the traditional approach, it tries to fit additive regression models a.k.a. ‘curve fitting’.
+    
+    The Prophet algorithm is an additive model, which means that it detects the following trend and seasonality from the data first, then combine them together to get the forecasted values.
+    
+    >The prophet model has the form:
+    >y(t)=g(t)+s(t)+h(t)+εt
+    >where g(t) is the trend function. s (t) is the periodic component (seasonalities) h(t) represents holidays/events which occur on potentially irregular basis. εt is the error term (which is often assumed to be normally distributed)
+    
+--------------------------------------------------------------------------------------------------------------------------------------------------------   
+    
+5. [TBATS](https://otexts.com/fpp2/complexseasonality.html)   
+    
+    The TBATS model is a forecasting model based on exponential smoothing. The name is an acronym for Trigonometric, Box-Cox transform, ARMA errors, Trend and Seasonal components.
+
+    The TBATS model’s main feature is its capability to deal with multiple seasonalities by modelling each seasonality with a trigonometric representation based on Fourier series. A classic example of complex seasonality is given by daily observations of sales volumes which often have both weekly and yearly seasonality.
+    
