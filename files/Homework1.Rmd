@@ -280,7 +280,7 @@ ggplot(kiralikdaire_sv, aes(x=month, y=search_volume, group = 1)) +
 
 
 
-After that, we need also the box plots of the search volume data. In the box plots below, we can see there is an increase in the search volume which can be interpreted as increased demand. Because these people are probably looking for an apartment to rent. Also, we can say that the higher the demand, the higher the price. Therefore, we can explain the increase in rent amounts (showed in x axis) in the each histogram earlier. Last but not least, if we look box plots of _rents_ and _search volume of kiralik daire_, we can see that the rate of increase in rent is larger.
+After that, we need also the box plots of the search volume data. In the box plots below, we can see there is an increase in the search volume which can be interpreted as increased demand. Because these people are probably looking for an apartment to rent. Also, we can say that the higher the demand, the higher the price. Therefore, this might explain the increase in rent amounts (showed in x axis) in the each histogram earlier. Of course, there might be other elements affects this. Last but not least, if we look box plots of _rents_ and _search volume of kiralik daire_, we can see that the rate of increase in rent is larger.
 
 
 ```{r echo = FALSE, include = TRUE}
@@ -310,7 +310,7 @@ ggplot(kiralikdaire_sv, aes(x = year, y = search_volume, fill = year)) +
 ##  3) Number of Visitors Resident in Abroad Who Visit Turkey Over 2012-2019
 
 
-The third data consists the number of visitors resident in abroad who visit Turkey over 2012-2019, their average expenditure as dollars. But in this part, I took only the number of visitors column.
+The third data consists the number of visitors resident in abroad who visit Turkey over 2012-2019, their average expenditure as dollars. But in this part, I took only the number of visitors column. This time, I took the data from [TUIK](https://data.tuik.gov.tr/) website.
 
 
 ```{r echo= FALSE, include=TRUE, message=FALSE}
@@ -419,6 +419,4 @@ ggplot(hotels_in_istanbul_sv, aes(x = year, y = search_volume, fill = year)) +
 
 
 The keyword "hotels in Istanbul" seems positively correlated. There is a decrease in 2016, and a gradual increase in in the following three years.
-
-
 
