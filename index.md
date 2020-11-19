@@ -1,4 +1,4 @@
-# Example Progress Journal
+# Fatma Ilayda Tutal Progress Journal in IE360
 
 ## Week 0 - Homework 0 (28.10.2020)
 
