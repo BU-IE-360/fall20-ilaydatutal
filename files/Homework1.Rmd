@@ -1,0 +1,424 @@
+---
+title: "Homework1"
+author: "İlayda Tutal - IE360 - Fall 2020"
+date: "08 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Data Visualization of Three Measures From Turkey and Comparing with Google Trends Data
+
+##  1) Average Gasoline Prices in Turkey Over 2016-2019
+
+
+
+When I started doing research to find an interesting data set, my dad said that he wonders about gasoline prices and how drastically they have changed. So, I thought it would be a good data to start with. I took the xlsx file from [VeriKaynagi](https://www.verikaynagi.com/grafik/yillara-gore-ortalama-benzin-fiyati-2009-2020/). This data set consists of monthly average prices of gasoline over the years 2009-2020. Since there were only three-month data in 2020, I didn't include 2020 and I wanted to show the last 5 year's change especially. 
+
+
+```{r include=FALSE}
+#necessary libraries and reading the data
+
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(readr)
+library(ggpubr)
+
+benzinfiyatlari <- read_excel("C:/Users/ilos3/Documents/R/benzinfiyatlari.xlsx", col_types = c("date", "numeric"))
+
+x2009_2020_searchvolume <- read_csv("C:/Users/ilos3/Downloads/2009-2020multiTimeline.csv", 
+                               skip = 1)
+
+
+```
+
+
+After I took my data, I did necessary manipulations such as collect them in one data frame to have a tidier data set.
+
+
+```{r include=FALSE}
+
+#manipulations
+
+years_gas <- c("2009","2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020")
+factor(years_gas)
+
+colnames(benzinfiyatlari)[1] = "Dates"
+
+df <- data.frame(date = benzinfiyatlari$Dates , avg_price = benzinfiyatlari$`Ortalama Benzin Fiyatı (TL)`, 
+                 year = rep(years_gas, each = 12, length.out = length(benzinfiyatlari$Dates)))
+
+```
+
+
+
+In the past decade, gasoline price has changed but we can see some significant difference in 2019. The shapes of the distribution in 2015, 2016, 2017, and 2018 are generally right-skewed. However the shape of 2019 data is more left-skewed. 
+
+
+
+```{r echo= FALSE, include= TRUE}
+
+#created a plot for each year, fortunately it will be handled with a for loop in the parts 2 and 3.
+
+plot_2015 <- ggplot(df %>% filter(year == "2015"), aes(x=avg_price)) +
+  geom_histogram(colour = "violetred4", fill = "mediumorchid1", alpha = 0.5, bins = 6) +
+  labs(x = "Average Price") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_2016 <- ggplot(df %>% filter(year == "2016"), aes(x=avg_price)) +
+  geom_histogram(colour = "violetred4", fill = "mediumorchid1", alpha=0.6, bins = 6) +
+  labs(x = "Average Price") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_2017 <- ggplot(df %>% filter(year == "2017"), aes(x=avg_price)) +
+  geom_histogram(colour = "violetred4", fill = "mediumorchid1", alpha=0.7, bins = 6) +
+  labs(x = "Average Price") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+
+plot_2018 <- ggplot(df %>% filter(year == "2018"), aes(x=avg_price)) +
+  geom_histogram(colour = "violetred4", fill = "mediumorchid1", alpha = 0.8, bins = 6) +
+  labs(x = "Average Price") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_2019 <- ggplot(df %>% filter(year == "2019"), aes(x=avg_price)) +
+  geom_histogram(colour = "violetred4", fill = "mediumorchid1", alpha = 0.9, bins = 6) +
+  labs(x = "Average Price") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+  
+
+figure_gasoline <- ggarrange(plot_2015, plot_2016, plot_2017, plot_2018, plot_2019, labels = years_gas[7:11], vjust= 1, hjust=-3.5 , font.label = list(size=10))
+
+annotate_figure(figure_gasoline, top = text_grob("Histograms of Average Gasoline Prices", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+And the box plot of the gasoline prices:
+
+
+```{r echo= FALSE, include= TRUE}
+
+ggplot(df[73:132 , ], aes(x= year, y= avg_price)) +
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Average Price of Gasoline in Turkey between 2015-2019", 
+       x = "Years",
+       y = "Average Price") +
+  scale_fill_brewer(palette = "PuRd", name = "Years") +
+  theme_minimal()
+
+```
+
+
+
+It can be seen that in the last 2-3 years, there is a significant increase in the prices.
+
+Since the price of gasoline is important for a lot of people in Turkey, it was time to see the relation between the search keyword "benzine zam (raise in gasoline price)". So, Google Trends data is collected. The search volume of the first 3 years has quite a similarity. On the other hand, we can see an increase in the search volume in 2019 which was expected when the histograms are observed.
+
+
+
+```{r echo= FALSE, include= TRUE}
+
+#reading the search volume data from Google Trends
+
+x2009_2020_sv <- data.frame(month = x2009_2020_searchvolume$Month , search_volume = x2009_2020_searchvolume$`benzine zam: (Turkey)`, 
+                 year = rep(years_gas, each = 12, length.out = length(benzinfiyatlari$Dates)))
+
+
+ggplot(x2009_2020_sv[73:132, ], aes(x = year, y = search_volume, fill = year)) + 
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Search Volumes of <Benzine Zam> in Turkey between 2009-2020", 
+       x = "Years",
+       y = "Search Volumes") +
+  scale_fill_brewer(palette = "PuRd", name = "Years") +
+  theme_minimal()
+
+
+```
+
+
+The keyword "benzine zam" seems positively correlated. This is quite logical considering that usually people hear about the increase in gasoline prices and serach up on Google to learn the details.
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+## 2) Monthly Rent Paid by Tenants In Turkey Over 2009-2019
+
+
+We all know there is a constant increase in the rent prices but I wonder how this increase changed over time. The data was taken from [VeriKaynagi](https://www.verikaynagi.com/grafik/yillara-gore-kiraci-tarafindan-odenen-gercek-kira-bedeli-2009-2019/) again. The data shows the actual monthly average rent paid by tenants over 2009 - 2019.
+
+
+```{r include=FALSE}
+
+#necessary libraries and reading the data
+
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(ggpubr)
+kira_2009_2020 <- read_excel("C:/Users/ilos3/Downloads/kira_2009_2020.xlsx", 
+    col_names = FALSE, col_types = c("date", 
+        "numeric"))
+
+
+```
+
+
+```{r include= FALSE}
+
+#necessary data manipulations
+
+colnames(kira_2009_2020) <- c("date", "rent")
+
+
+years_rent <- c(2009:2019)
+
+rent_2009_2020 <- data.frame(date = kira_2009_2020$date, rent = kira_2009_2020$rent, 
+                             year = rep(years_rent, each = 12, length.out = length(kira_2009_2020$date)))
+
+
+```
+
+
+I used _ggplot2 _ library to plot my histograms and box plots. When I plotted the histograms of rent paid by tenants, actually there was not a huge difference between yearly histograms. However, there was a noticeable increase in the prices which can be seen in x axis of the histograms. This made me think there is seasonality and this was quite logical as leases are renewed once a year. Therefore I wondered if there is also a seasonality in Google Trends or not.
+
+
+```{r echo = FALSE, include = TRUE}
+
+#created an empty plot list to use in for loop and ggarrange method later on
+plot_list <- vector(mode = "list", length = 12)
+
+
+
+#I assigned each year's data to a p and put it into plot list:
+j=1
+for(i in 2009:2019){
+
+p <- ggplot(rent_2009_2020 %>% filter(year == i), aes(x= rent)) +
+  geom_histogram(colour = "olivedrab4", fill = "olivedrab2", alpha = 0.4, bins = 9) +
+  labs(x= "Rent") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_list[[j]] <-  p
+i<- i+1
+j <- j+1
+}
+
+figure_rent <- ggarrange(plotlist = plot_list, labels = years_rent, vjust= 1, hjust=-3.5 , font.label = list(size=10))
+
+annotate_figure(figure_rent, top = text_grob("Histograms of Rent Paid by Tenants", color = "black", face = "bold", size = 13))
+
+
+```
+
+
+
+
+Also the boxplots of rents paid by tenants over years:
+
+```{r echo= FALSE, include= TRUE}
+ggplot(rent_2009_2020, aes(x= year, y= rent)) +
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Rent Paid by Tenants over 2009-2019", 
+       x = "Years",
+       y = "Rent") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+It can be seen above that the shape of the box plots look very close as they're expected. So, I get the search volume data of "kiralik daire" (apartment for rent) to see if there is a seasonality and more to explore. This is the line plot of the search volume. This line plot clearly shows that there is a pattern that repeats over time :
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+#search volume data was taken
+library(readr)
+kiralikdaire <- read_csv("C:/Users/ilos3/Downloads/kiralikdaire.csv", 
+    skip = 1)
+
+kiralikdaire_sv <- data.frame(month = kiralikdaire$Month , search_volume = kiralikdaire$`kiralik daire: (Turkey)` , 
+                 year = rep(years_rent, each = 12, length.out = length(kiralikdaire$Month)))
+
+
+
+
+#line plot to see if there is a pattern in the data:
+ggplot(kiralikdaire_sv, aes(x=month, y=search_volume, group = 1)) +
+  geom_line(size = 1, colour = "olivedrab3") +
+  labs(title = "Monthly search volume of <kiralik daire> over 2009-2019", 
+       x = "Date",
+       y = "Search Volume") +
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size=4, hjust = 1))
+
+```
+
+
+
+
+After that, we need also the box plots of the search volume data. In the box plots below, we can see there is an increase in the search volume which can be interpreted as increased demand. Because these people are probably looking for an apartment to rent. Also, we can say that the higher the demand, the higher the price. Therefore, we can explain the increase in rent amounts (showed in x axis) in the each histogram earlier. Last but not least, if we look box plots of _rents_ and _search volume of kiralik daire_, we can see that the rate of increase in rent is larger.
+
+
+```{r echo = FALSE, include = TRUE}
+
+ggplot(kiralikdaire_sv, aes(x = year, y = search_volume, fill = year)) + 
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Search Volumes of <Kiralik Daire> in Turkey between 2009-2019", 
+       x = "Years",
+       y = "Search Volumes") +
+  theme_minimal()
+
+
+```
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+##  3) Number of Visitors Resident in Abroad Who Visit Turkey Over 2012-2019
+
+
+The third data consists the number of visitors resident in abroad who visit Turkey over 2012-2019, their average expenditure as dollars. But in this part, I took only the number of visitors column.
+
+
+```{r echo= FALSE, include=TRUE, message=FALSE}
+
+#reading the data and unnamed in order to use rbind later (did it according to an error I got)
+library(readxl)
+tourist_data <- read_excel("C:/Users/ilos3/Downloads/turist_veri.xls", 
+    skip = 4)
+tourist_data <- unname(tourist_data)
+
+#created a months variable
+months <- tourist_data[2:13, 1]
+
+#created an empty data frame to use in the for loop
+visitors_df <- data.frame()
+
+#created a plot lists to use in ggarrange method later
+plot_list_tourists <- vector(mode = "list", length = 8)
+
+
+#for loop in order to manipulate my data
+j=0
+for(i in 2012:2019){
+oneyear_df <- data.frame(visitors = tourist_data[2:13, j+3], month = months, year = rep(i, 12))
+visitors_df <- data.frame(rbind(visitors_df, oneyear_df))
+
+i<- i+1
+j <- j+3
+}
+
+colnames(visitors_df) <- c("no_of_visitors", "month", "year")
+
+
+
+```
+
+```{r echo= FALSE, include=FALSE, message=FALSE }
+as.numeric(visitors_df$no_of_visitors)
+```
+
+
+Especially the first four histograms are very similar. There is a change in year 2016, and there are similarities to 2016 in the following years. There might be different reasons what affected these values but what I wonder was the Google Trends data from this point on.
+
+
+```{r echo= FALSE, include= TRUE, message= FALSE}
+
+#again, I put plots iin a plot list to use in ggarrange and annotate_figure methods.
+k=1
+for(i in 2012:2019){
+  p <- ggplot(visitors_df %>% filter(year == i), aes(x= no_of_visitors)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue3", alpha = 0.4, bins = 5) +
+  labs(x= "No. of visitors") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_list_tourists[[k]] <-  p
+
+i <- i+1
+k <- k+1
+}
+
+figure_visitors <- ggarrange(plotlist = plot_list_tourists,labels = c(2012:2020) ,vjust= 1, hjust=-3.5 , font.label = list(size=9))
+
+annotate_figure(figure_visitors, top = text_grob("Histograms of Number of Visitors 2012-2019", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+Box plots of number of visitors can be seen below:
+
+
+```{r echo= FALSE, include= TRUE}
+ggplot(visitors_df, aes(x= year, y= no_of_visitors)) +
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Number of Visitors", 
+       x = "Years",
+       y = "No of Visitors") +
+  scale_fill_brewer(palette = "Blues", name = "Years") +
+  theme_minimal()
+
+```
+
+
+
+Since these people are resident in abroad, I assume they might need to find a hotel. It seems more meaningful to decide the keyword as "hotels in Istanbul" rather than "hotels in Turkey". Because hotels in Turkey woud be too comprehensive. Box plots of the search volume can be seen below:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+library(readr)
+hotels_in_istanbul <- read_csv("C:/Users/ilos3/Downloads/hotels_in_istanbul.csv", 
+    skip = 1)
+
+hotels_in_istanbul_sv <- data.frame(date = hotels_in_istanbul$Month, search_volume = hotels_in_istanbul$`hotels in istanbul: (Turkey)`, year = rep(c(2012:2019), 12))
+
+ggplot(hotels_in_istanbul_sv, aes(x = year, y = search_volume, fill = year)) + 
+  geom_boxplot(aes(fill = factor(year))) +
+  labs(title = "Boxplots of Search Volume of <Hotels in Istanbul> in Turkey between 2012-2019", 
+       x = "Years",
+       y = "Search Volumes") +
+  scale_fill_brewer(palette = "Blues", name = "Years") +
+  theme_minimal()
+
+
+```
+
+
+The keyword "hotels in Istanbul" seems positively correlated. There is a decrease in 2016, and a gradual increase in in the following three years.
+
+
+
