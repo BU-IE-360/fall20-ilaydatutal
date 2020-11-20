@@ -418,5 +418,19 @@ ggplot(hotels_in_istanbul_sv, aes(x = year, y = search_volume, fill = year)) +
 ```
 
 
-The keyword "hotels in Istanbul" seems positively correlated. There is a decrease in 2016, and a gradual increase in in the following three years.
+The keyword "hotels in Istanbul" seems positively correlated especially after 2016. There is a decrease in 2016 and a gradual increase in the next three years. Since not all the visitors come to Istanbul or stay in an hotel, these two data are not perfectly correlated. But, tourists who come to Istanbul and stay in an hotel correspond to the majority; so, there is still a correlation.
 
+
+
+
+
+
+
+**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework1.Rmd)**
+
+**References: **
+
+* [TUIK](https://data.tuik.gov.tr/)
+* [VeriKaynagi](https://www.verikaynagi.com/)
+* [Quick-R by datacamp](https://www.statmethods.net/index.html)
+* [STHDA](http://www.sthda.com/english/)
