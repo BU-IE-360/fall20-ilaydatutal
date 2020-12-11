@@ -9,4 +9,4 @@
 [Here](files/Homework1.html) are my interesting 3 data visualization examples using R!
 
 ## Week 5 - Homework 2 (11.12.2020)
-[Here](files/Homework2.html) is my time series and correlation study using R!
+[Here](files/Homework2.html) is my time series data visualization and correlation study using R!
