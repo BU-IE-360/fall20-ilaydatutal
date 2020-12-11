@@ -1,0 +1,434 @@
+---
+title: "A data analysis on factors affecting interest rates"
+author: "İlayda Tutal"
+date: "05 12 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Interest rates play an important role in overall economy. They affect economic decision makings such as where to invest, and to what extend. Interest rates could be determined according to many factors and could be affected as well. Most of us probably are familiar with interest rates and the changes in them over months or years. According to my knowledge on economics and a small-scale research, I needed to ask this question: **"Are interest rates statistics related to exchange rates, domestic borrowing, supply of money?"**. So, naturally, weighted interest rates data is necessary in the beginning. I use personal finance credit interest rate data since home or car loan are too specific for my research question.
+
+* First of all, it is stated that in economics that: all else being equal, a larger **money supply** lowers market interest rates, making it less expensive for consumers to borrow. Conversely, smaller money supplies tend to raise market interest rates, making it pricier for consumers to take out a loan. This will be analyzed in the following parts with time series data. Therefore, Turkish Republic Central Bank (money level in terms of thousand Turkish liras) data is going to be used.
+
+* Secondly, in economies where savings are insufficient, the public resorting to **domestic borrowing** to finance public deficits has an impact on interest rates (Özbilen, 2015:507). Therefore, interest rates are increased to find new debt. Additionally, according to my research on domestic borrowings, Demir and Sever (2008) made a research about how domestic borrowing affects multiple economic measures, one of them being interest rates. Their research includes the years 1987-2007, and supported the argument presented by Özbilen. We will see if our data is going to suport as well, or otherwise. So, Government Debt Securities data is going to be used.
+
+* Last but not least, effect of **exchange rates** is going to be analyzed. We all have a basic understanding about how exchange rates  affects our daily life or economic decisions and in the following parts we will see how it is related with interest rates. Therefore, buying rate of exchange (EUR) is going to be used.
+
+
+
+
+# Data Manipulation & Visualization
+
+Necessary data is taken from the Electronic Data Delivery System, [EVDS](https://evds2.tcmb.gov.tr/). In order to make a reasonable analysis, a 9-years period was chosen. In EVDS, statistics are accessed in their original frequency, as time series.
+
+```{r echo = FALSE, include = FALSE, message=FALSE}
+library(data.table)
+library(ggplot2)
+library(readxl)
+library(lubridate)
+library(dplyr)
+library(ggpubr)
+#install.packages("ggcorrplot")
+library(ggcorrplot)
+library(tidyr)
+
+agirlikli_faiz <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/agirlikli_faiz.xlsx", 
+    n_max = 95)
+colnames(agirlikli_faiz) = c("date", "weighted_int_rate")
+
+tcmb_para_arzi <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/tcmb_para_arzi.xlsx", 
+    n_max = 95)
+colnames(tcmb_para_arzi) = c("date", "money_supply")
+
+
+ic_borclanma <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/ic_borclanma.xlsx", 
+    n_max = 95)
+colnames(ic_borclanma) = c("date", "total_TL")
+
+euro_alis <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/euro_alis.xlsx", 
+    n_max = 95)
+colnames(euro_alis) = c("date", "euro")
+
+
+#all data are gathered together in one data table
+all_DT = data.table(date = agirlikli_faiz$date, weighted_int_rate = agirlikli_faiz$weighted_int_rate, money_supply = tcmb_para_arzi$money_supply, domestic_borrowing = ic_borclanma$total_TL, euro = euro_alis$euro)
+
+#since using a year-month date type is somewhat problematic for me at this level, I added "day" as 15 for each month
+all_DT = all_DT[, 1 := ymd(paste0(unlist(all_DT[,1]), "-15"))]
+
+#created a years vector
+as.Date(all_DT$date, format = "%Y-%m-%d")
+years <- levels(factor(format(all_DT$date, format="%Y")))
+
+#added the year column to my data table using the years vector I just created
+all_DT <- all_DT[,year := rep(years, each = 12, length.out = .N),]
+
+
+
+#I am going to create another data table in order to use in pletting lines and boxplots
+#amount <- c(agirlikli_faiz$weighted_int_rate, tcmb_para_arzi$money_supply, euro_alis$euro, ic_borclanma$total_TL)
+#types <- c("weighted_int_rate", "money_supply", "euro", "domestic_borrowing")
+#type <- c(rep(types, each = 95, length.out=length(amount)))
+
+#combined_dt <- data.table(date = rep(agirlikli_faiz$date, length.out=length(amount)) ,amount = amount, type = type)
+
+
+
+```
+
+
+After gathering all the necessary data in a data table, and made the necessary manipulations, we can take a look at the first 10 rows:
+```{r, include=TRUE, echo=FALSE}
+head(all_DT, 10)
+```
+
+
+Now, we can see the change in interest rate data  with a line plot easily.
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+ggplot(all_DT, aes(x=date, y=weighted_int_rate, group = 1)) +
+  geom_line(size = 1, colour = "royalblue1") +
+  labs(title = "Weighted Interest Rate in Turkey 2013-2020", 
+       x = "Date",
+       y = "Weighted Interest Rate") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, size=9, hjust = 1))
+
+
+```
+
+
+
+As it is seen above, weighted interest rates change over years. It has no seasonality which is not so surprising since season/month does not usually affect interest rate. In addition to that, there is a a noticeable peak after 2018. Reasons of this might depend on various things.
+
+Also, in order to get a general idea about how our data is distributed, it could be nice to see histograms:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+#created an empty plot list to use in for loop and ggarrange method later on
+plot_list1 <- vector(mode = "list", length = 8)
+
+
+#I assigned each year's data to a p and put it into plot list:
+j=1
+for(i in 2013:2020){
+
+p <- ggplot(all_DT[year==i,,], aes(x= weighted_int_rate)) +
+  geom_histogram( aes(y=..density..),colour = "slateblue4", alpha=0.6, fill = "royalblue1", bins= 10) +
+  geom_density(alpha=.3, colour = "navy", fill = "lightskyblue") +
+  labs(x= "Weighted Interest Rate",
+       y="Density") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_list1[[j]] <-  p
+i<- i+1
+j <- j+1
+}
+
+figure_interest_rate <- ggarrange(plotlist = plot_list1, labels = years, vjust= 1, hjust=-4.5 , font.label = list(size=10))
+
+annotate_figure(figure_interest_rate, top = text_grob("Year by Year Histograms of Weighted Interest Rates in Turkey", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+We can see that interest rate changes over time with not a pattern in other words there is no seasonality. In fact, there is a noticeable increase in 2018 which can be seen in the x axis on the histogram of 2018 as well. As it can be seen from histograms after 2016, we can not easily say that the histograms are left-skewed or right-skewed since they have more straight shapes. We can interpret this as the distribution of the rates over the year was balanced.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+#created an empty plot list to use in for loop and ggarrange method later on
+plot_list2 <- vector(mode = "list", length = 8)
+
+#I assigned each year's data to a p and put it into plot list:
+j=1
+for(i in 2013:2020){
+
+p <- ggplot(all_DT[year == i,,], aes(x= money_supply)) +
+  geom_histogram(aes(y=..density..), colour = "maroon4", fill = "mediumvioletred", alpha = 0.6, bins= 10) +
+  geom_density(alpha=.3, colour = "violetred4", fill = "violet") +
+  labs(x= "Money Supply",
+       y="Density") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))+
+  theme(axis.text.x = element_text(angle = 45, size=8, hjust = 1))
+
+
+plot_list2[[j]] <-  p
+i<- i+1
+j <- j+1
+}
+
+figure_money_supply <- ggarrange(plotlist = plot_list2, labels = years, vjust= 1, hjust=-4.5 , font.label = list(size=10))
+
+annotate_figure(figure_money_supply, top = text_grob("Year by Year Histograms of Money Supply in Turkey", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+Unlike interest rate histograms, money supply histograms differ more depending on the year. Again in 2018, we have some critical change. In the first three years, the shape of the distributions are similar to each other. But after that, we see more left-skewed  shapes in the histograms. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+#created an empty plot list to use in for loop and ggarrange method later on
+plot_list3 <- vector(mode = "list", length = 9)
+
+
+#I assigned each year's data to a p and put it into plot list:
+j=1
+for(i in 2013:2020){
+
+p <- ggplot(all_DT[year == i,,], aes(x= domestic_borrowing)) +
+  geom_histogram(aes(y=..density..), colour = "maroon4", fill = "mediumvioletred", alpha = 0.6, bins = 10) +
+  geom_density(alpha=.3, colour = "violetred4", fill = "violet") +
+  labs(x= "Domestic Borrowing",
+       y="Density") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))+
+  theme(axis.text.x = element_text(angle = 45, size=8, hjust = 1))
+
+
+plot_list3[[j]] <-  p
+i<- i+1
+j <- j+1
+}
+
+figure_domestic_borrowing <- ggarrange(plotlist = plot_list3, labels = years, vjust= 1, hjust=-4.5 , font.label = list(size=10))
+
+annotate_figure(figure_domestic_borrowing, top = text_grob("Year by Year Histograms of Domestic Borrowing in Turkey", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+
+
+
+Domestic borrowing data is most likely to can be fitted in a normal distribution so far. We can say that there is not a big difference between the shapes of histograms in successive 2-3 years. Since these are really huge numbers, similarity between successive years is quite reasonable. 
+This study includes only 8 years; therefore, there is not a specific peak or unexpected distribution. In other words, the domestic borrowing of Turkey is probably differs more when we look before a war, and some time after a war. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+#created an empty plot list to use in for loop and ggarrange method later on
+plot_list4 <- vector(mode = "list", length = 9)
+
+
+#I assigned each year's data to a p and put it into plot list:
+j=1
+for(i in 2013:2020){
+
+p <- ggplot(all_DT[year == i,,], aes(x= euro)) +
+  geom_histogram(aes(y=..density..), colour = "maroon4", fill = "mediumvioletred", alpha = 0.6, bins = 10) +
+  geom_density(alpha=.3, colour = "violetred4", fill = "violet") +
+  labs(x= "Euro",
+       y="Density") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=8), axis.title=element_text(size=9,face="italic"))
+
+plot_list4[[j]] <-  p
+i<- i+1
+j <- j+1
+}
+
+figure_euro <- ggarrange(plotlist = plot_list4, labels = years, vjust= 1, hjust=-4.5 , font.label = list(size=10))
+
+annotate_figure(figure_euro, top = text_grob("Year by Year Histograms of Exchange Rate of Euro to Lira in Turkey", color = "black", face = "bold", size = 13))
+
+```
+
+
+
+
+
+Last but not least, we have the histograms for exchange rate of euro to lira. This is something we all constantly observe, hear or somewhat have a sense about. Not only the shapes, but also the overall increase can be seen from x axis again. Until 2016, it can be stated that there is not a huge difference in exchange rates although the shapes are not very similar. However, after 2016, increase of the exchange rate accelerated. 2016, the year that the coup attempt in Turkey and then to fluctuations in the economy this year, many of us have witnessed it closely.
+
+
+
+
+
+
+
+
+
+
+
+## Correlation Analyses
+
+In order to investigate the dependence between multiple variables at the same time, correlation matrix is used
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+library(GGally)
+
+#exclude the date and year column to use this data table in correlation analysis easily
+corr_DT <- all_DT[, c(2:5)]
+colnames(corr_DT) <- c("Weighted Int. Rate", "Money Supply", "Domestic Borrowing", "Euro")
+
+ggpairs(corr_DT) + theme_get()
+```
+
+
+
+
+
+
+
+Additionally, correlation matrix is as follows:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+corr_matrix <- cor(corr_DT)
+corr_matrix
+```
+
+
+
+
+Using this correlation matrix, another visualization can be made which is also presents a lot of information with the help of colors:
+
+
+
+
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+ggcorrplot(corr_matrix, method = "circle", col =c("violetred1", "white", "navyblue"))
+```
+
+
+
+
+
+We had the same results with fancier representation, we can see the significant correlation between euro and interest rates, or euro and domestic borrowing. 
+
+
+
+
+
+Earlier, in the introduction part, it is stated that **all else being equal**, a larger money supply lowers market interest rates, making it less expensive for consumers to borrow. However, we are dealing with real data; therefore, the results are not so surprising. There could be many other measures affecting this assumption. There is also a remarkable relationship between the euro and interest rate. The high correlation between the euro and the money supply, or between the euro and domestic borrowing, also indicates that domestic borrowing and money supply can have an indirect effect on interest rate. We will use a correlation test to examine these results in more detail and mathematically. By mathematically, what I mean is Pearson's correlation test. 
+
+Briefly, The Pearson correlation coefficient is used to measure the strength of a linear association between two variables, where the value _r = 1_ means a perfect positive correlation and the value _r = -1_ means a perfect negative correlation.
+
+
+
+#### The correlation between the weighted interest rates and money supply:
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$`Money Supply`)
+```
+
+
+
+If the p-value is < 5%, then the correlation between the two data is significant. However, we fail to reject the null hypothesis which was saying that the true correlation between these two data is equal to 0. There is not a significant correlation by looking at the p-value and correlogram as well.
+
+
+
+
+
+
+
+
+#### Correlation between the weighted interest rate and domestic borrowing:
+```{r echo = FALSE, include = TRUE, message=FALSE}
+cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$`Domestic Borrowing`)
+```
+
+
+
+Although the p-value of this one is smaller, it is still not enough for us to reject to null hypothesis. As it was seen before from the correlogram, the correlation is not significant.
+
+
+
+
+
+
+
+#### Correlation between weighted interest rate and exchange rate
+```{r echo = FALSE, include = TRUE, message=FALSE}
+cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$Euro)
+```
+
+
+This time, the p-value is very small which will allow us to reject the null hypothesis. In other words, it is safe to say the correlation between weighted interest rates and euro, is not equal to zero, and significant.
+
+
+
+As it is mentioned above, we see that euro has a significant correlation between other three measures. This is not surprising since changes in exchange rates in open economies affects key economic indicators. According to my research: increases in the exchange rate initially increase exports and increase national income. In parallel with the increase in national income, the increase in the demand for money causes the interest rates to rise and vice versa. Despite the fact that we have not a significant correlation between interest rates and money supply, euro seems to affect all of these measures.
+
+
+
+
+
+# Conclusion
+```{r}
+#conclusion is going to be added
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
