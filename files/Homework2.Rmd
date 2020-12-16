@@ -1,5 +1,5 @@
 ---
-title: "A data analysis on factors affecting interest rates"
+title: "Data Analysis on Factors Affecting Interest Rates"
 author: "İlayda Tutal"
 date: "05 12 2020"
 output: html_document
@@ -11,20 +11,20 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Interest rates play an important role in overall economy. They affect economic decision makings such as where to invest, and to what extend. Interest rates could be determined according to many factors and could be affected as well. Most of us probably are familiar with interest rates and the changes in them over months or years. According to my knowledge on economics and a small-scale research, I needed to ask this question: **"Are interest rates statistics related to exchange rates, domestic borrowing, supply of money?"**. So, naturally, weighted interest rates data is necessary in the beginning. I use personal finance credit interest rate data since home or car loan are too specific for my research question.
+Interest rates play an important role in the overall economy. They affect economic decision makings such as where to invest, and to what extend. Interest rates could be determined according to many factors and could be affected as well. Most of us probably are familiar with interest rates and the changes in them over months or years. According to my knowledge of economics and small-scale research, I needed to ask this question: **"Are interest rates statistics related to exchange rates, domestic borrowing, the supply of money?"**. So, naturally, weighted interest rates data is necessary for the beginning. I use personal finance credit interest rate data since a home or car loan would be too specific for my research question.
 
-* First of all, it is stated that in economics that: all else being equal, a larger **money supply** lowers market interest rates, making it less expensive for consumers to borrow. Conversely, smaller money supplies tend to raise market interest rates, making it pricier for consumers to take out a loan. This will be analyzed in the following parts with time series data. Therefore, Turkish Republic Central Bank (money level in terms of thousand Turkish liras) data is going to be used.
+* First of all, it is stated that in economics that: all else being equal, a larger **money supply** lowers market interest rates, making it less expensive for consumers to borrow. Conversely, smaller money supplies tend to raise market interest rates, making it pricier for consumers to take out a loan. This will be analyzed in the following parts with time-series data. Therefore, the Turkish Republic Central Bank (money level in terms of Turkish Liras) data is going to be used.
 
-* Secondly, in economies where savings are insufficient, the public resorting to **domestic borrowing** to finance public deficits has an impact on interest rates (Özbilen, 2015:507). Therefore, interest rates are increased to find new debt. Additionally, according to my research on domestic borrowings, Demir and Sever (2008) made a research about how domestic borrowing affects multiple economic measures, one of them being interest rates. Their research includes the years 1987-2007, and supported the argument presented by Özbilen. We will see if our data is going to suport as well, or otherwise. So, Government Debt Securities data is going to be used.
+* Secondly, in economies where savings are insufficient, the public resorting to **domestic borrowing** to finance public deficits has an impact on interest rates (Özbilen, 2015:507). Therefore, interest rates are increased to find new debt. Additionally, according to my research on domestic borrowings, Demir and Sever (2008) made research about how domestic borrowing affects multiple economic measures, one of them being interest rates. Their research includes the years 1987-2007 and supported the argument presented by Özbilen. We will see if our data is going to support as well, or otherwise. So, Government Debt Securities data is going to be used.
 
-* Last but not least, effect of **exchange rates** is going to be analyzed. We all have a basic understanding about how exchange rates  affects our daily life or economic decisions and in the following parts we will see how it is related with interest rates. Therefore, buying rate of exchange (EUR) is going to be used.
+* Last but not least, the effect of **exchange rates** is going to be analyzed. We all have a basic understanding of how exchange rates  affect our daily life or economic decisions and in the following parts, we will see how it is related to interest rates. Therefore, the rate of exchange (EUR) is going to be used.
 
 
 
 
 # Data Manipulation & Visualization
 
-Necessary data is taken from the Electronic Data Delivery System, [EVDS](https://evds2.tcmb.gov.tr/). In order to make a reasonable analysis, a 9-years period was chosen. In EVDS, statistics are accessed in their original frequency, as time series.
+Necessary data is taken from the Electronic Data Delivery System, [EVDS](https://evds2.tcmb.gov.tr/). To make a reasonable analysis, an 8-years period was chosen. In EVDS, statistics are accessed in their original frequency, as time series.
 
 ```{r echo = FALSE, include = FALSE, message=FALSE}
 library(data.table)
@@ -70,15 +70,6 @@ all_DT <- all_DT[,year := rep(years, each = 12, length.out = .N),]
 
 
 
-#I am going to create another data table in order to use in pletting lines and boxplots
-#amount <- c(agirlikli_faiz$weighted_int_rate, tcmb_para_arzi$money_supply, euro_alis$euro, ic_borclanma$total_TL)
-#types <- c("weighted_int_rate", "money_supply", "euro", "domestic_borrowing")
-#type <- c(rep(types, each = 95, length.out=length(amount)))
-
-#combined_dt <- data.table(date = rep(agirlikli_faiz$date, length.out=length(amount)) ,amount = amount, type = type)
-
-
-
 ```
 
 
@@ -106,9 +97,9 @@ ggplot(all_DT, aes(x=date, y=weighted_int_rate, group = 1)) +
 
 
 
-As it is seen above, weighted interest rates change over years. It has no seasonality which is not so surprising since season/month does not usually affect interest rate. In addition to that, there is a a noticeable peak after 2018. Reasons of this might depend on various things.
+As is seen above, weighted interest rates change over the years. It has no seasonality which is not so surprising since season/month does not usually affect the interest rate. In addition to that, there is a noticeable peak after 2018. Reasons for this might depend on various things.
 
-Also, in order to get a general idea about how our data is distributed, it could be nice to see histograms:
+Also, to get a general idea about how our data is distributed, it could be nice to see histograms:
 
 
 ```{r echo = FALSE, include = TRUE, message=FALSE}
@@ -142,19 +133,7 @@ annotate_figure(figure_interest_rate, top = text_grob("Year by Year Histograms o
 
 
 
-We can see that interest rate changes over time with not a pattern in other words there is no seasonality. In fact, there is a noticeable increase in 2018 which can be seen in the x axis on the histogram of 2018 as well. As it can be seen from histograms after 2016, we can not easily say that the histograms are left-skewed or right-skewed since they have more straight shapes. We can interpret this as the distribution of the rates over the year was balanced.
-
-
-
-
-
-
-
-
-
-
-
-
+We can see that the interest rate doesn't change over time with a pattern in other words there is no seasonality. There is a noticeable increase in 2018 which can be seen in the x-axis on the histogram of 2018 as well. As it can be seen from histograms after 2016, we can not easily say that the histograms are left-skewed or right-skewed since they have more straight shapes. We can interpret this as the distribution of the rates over the year was balanced.
 
 
 
@@ -192,19 +171,7 @@ annotate_figure(figure_money_supply, top = text_grob("Year by Year Histograms of
 
 
 
-Unlike interest rate histograms, money supply histograms differ more depending on the year. Again in 2018, we have some critical change. In the first three years, the shape of the distributions are similar to each other. But after that, we see more left-skewed  shapes in the histograms. 
-
-
-
-
-
-
-
-
-
-
-
-
+Unlike interest rate histograms, money supply histograms differ more depending on the year. Again in 2018, we have some critical change which may be an explanation for the peak in the line plot in interest rate. However, we cannot say just looking at the histograms, this is why we need further analysis. In the first three years, the shape of the distributions is similar to each other. But after that, we see more left-skewed  shapes in the histograms. 
 
 
 
@@ -245,18 +212,8 @@ annotate_figure(figure_domestic_borrowing, top = text_grob("Year by Year Histogr
 
 
 
-Domestic borrowing data is most likely to can be fitted in a normal distribution so far. We can say that there is not a big difference between the shapes of histograms in successive 2-3 years. Since these are really huge numbers, similarity between successive years is quite reasonable. 
-This study includes only 8 years; therefore, there is not a specific peak or unexpected distribution. In other words, the domestic borrowing of Turkey is probably differs more when we look before a war, and some time after a war. 
-
-
-
-
-
-
-
-
-
-
+Domestic borrowing data is most likely to can be fitted in a normal distribution so far. We can say that there is not a big difference between the shapes of histograms in successive 2-3 years. Since these are huge numbers, the similarity between successive years is quite reasonable. 
+This study includes only 8 years; therefore, there is not a specific peak or unexpected distribution. In other words, the domestic borrowing of Turkey probably differs more when we look before a war, and some time after a war. 
 
 
 
@@ -297,7 +254,7 @@ annotate_figure(figure_euro, top = text_grob("Year by Year Histograms of Exchang
 
 
 
-Last but not least, we have the histograms for exchange rate of euro to lira. This is something we all constantly observe, hear or somewhat have a sense about. Not only the shapes, but also the overall increase can be seen from x axis again. Until 2016, it can be stated that there is not a huge difference in exchange rates although the shapes are not very similar. However, after 2016, increase of the exchange rate accelerated. 2016, the year that the coup attempt in Turkey and then to fluctuations in the economy this year, many of us have witnessed it closely.
+Last but not least, we have the histograms for the exchange rate of the euro to lira. This is something we all constantly observe, hear, or somewhat have a sense about. Not only the shapes but also the overall increase can be seen from the x-axis again. Until 2016, it can be stated that there is not a huge difference in exchange rates although the shapes are not very similar. However, after 2016, the increase in the exchange rate accelerated. 2016, the year that the coup attempt in Turkey and then to fluctuations in the economy this year, many of us have witnessed it closely.
 
 
 
@@ -311,7 +268,7 @@ Last but not least, we have the histograms for exchange rate of euro to lira. Th
 
 ## Correlation Analyses
 
-In order to investigate the dependence between multiple variables at the same time, correlation matrix is used
+To investigate the dependence between multiple variables at the same time, scatter plots with the correlation coefficients can be seen below:
 
 ```{r echo = FALSE, include = TRUE, message=FALSE}
 library(GGally)
@@ -329,7 +286,7 @@ ggpairs(corr_DT) + theme_get()
 
 
 
-Additionally, correlation matrix is as follows:
+Additionally, the correlation matrix is as follows:
 
 
 ```{r echo = FALSE, include = TRUE, message=FALSE}
@@ -361,13 +318,33 @@ We had the same results with fancier representation, we can see the significant 
 
 
 
-Earlier, in the introduction part, it is stated that **all else being equal**, a larger money supply lowers market interest rates, making it less expensive for consumers to borrow. However, we are dealing with real data; therefore, the results are not so surprising. There could be many other measures affecting this assumption. There is also a remarkable relationship between the euro and interest rate. The high correlation between the euro and the money supply, or between the euro and domestic borrowing, also indicates that domestic borrowing and money supply can have an indirect effect on interest rate. We will use a correlation test to examine these results in more detail and mathematically. By mathematically, what I mean is Pearson's correlation test. 
+Earlier, in the introduction part, it is stated that **all else being equal**, a larger money supply lowers market interest rates, making it less expensive for consumers to borrow. However, we are dealing with real data; therefore, the results are not so surprising. There could be many other measures affecting this assumption. There is also a remarkable relationship between the euro exchange rate and the interest rate. The high correlation between the euro and the money supply, or between the euro and domestic borrowing, also indicates that domestic borrowing and money supply can have an indirect effect on the interest rate. We will use a correlation test to examine these results in more detail and mathematically. By mathematically, what I mean is Pearson's correlation test. 
 
 Briefly, The Pearson correlation coefficient is used to measure the strength of a linear association between two variables, where the value _r = 1_ means a perfect positive correlation and the value _r = -1_ means a perfect negative correlation.
 
 
 
-#### The correlation between the weighted interest rates and money supply:
+### The correlation between the weighted interest rates and money supply:
+
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+ggplot(all_DT, aes(x=date)) +
+  geom_line(aes(y=weighted_int_rate, color= "W. Interest Rate"), size=1)+
+  geom_line(aes(y=money_supply/1000, color = "Money Supply"), size=1)+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(x="Date",y="Amount", title="Weighted Interest Rates and Money Supply (thousand TL) in Turkey in 2013-2020")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  scale_x_date(date_labels =  "%Y")+
+    scale_colour_manual(values=c("mediumvioletred","royalblue1"))
+
+
+```
+
+
+As we can see above, there seems not a significant correlation exists. There are two sudden increases in the money supply after 2018 as we have seen in the histograms prior. Similarly, there are two jumps in the interest rates at close dates. However, this small similarity will probably be not enough to say there is a correlation. To clearly understand the relationship between these two, we continue with the correlation test:
 
 ```{r echo = FALSE, include = TRUE, message=FALSE}
 cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$`Money Supply`)
@@ -384,14 +361,33 @@ If the p-value is < 5%, then the correlation between the two data is significant
 
 
 
-#### Correlation between the weighted interest rate and domestic borrowing:
+### Correlation between the weighted interest rate and domestic borrowing:
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+ggplot(all_DT, aes(x=date)) +
+  geom_line(aes(y=weighted_int_rate, color= "W. Interest Rate"), size=1)+
+  geom_line(aes(y=domestic_borrowing/1000000, color = "Domestic Borrowing"), size=1)+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(x="Date",y="Amount", title="Weighted Interest Rates and Domestic Borrowing (million TL) in Turkey in 2013-2020")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  scale_x_date(date_labels =  "%Y")+
+    scale_colour_manual(values=c("mediumvioletred","royalblue1"))
+
+
+```
+
+
+This time, we have a comparison of weighted interest rates and domestic borrowing. Again, although graphs seem not correlated, we should provide statistical proof that the correlation is significant or not:
+
 ```{r echo = FALSE, include = TRUE, message=FALSE}
 cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$`Domestic Borrowing`)
 ```
 
 
 
-Although the p-value of this one is smaller, it is still not enough for us to reject to null hypothesis. As it was seen before from the correlogram, the correlation is not significant.
+Although the p-value of this one is smaller, it is still not enough for us to reject the null hypothesis. As it was seen before from the correlogram, the correlation is not significant.
 
 
 
@@ -399,7 +395,25 @@ Although the p-value of this one is smaller, it is still not enough for us to re
 
 
 
-#### Correlation between weighted interest rate and exchange rate
+### Correlation between the weighted interest rate and exchange rate
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+ggplot(all_DT, aes(x=date)) +
+  geom_line(aes(y=weighted_int_rate/10, color= "W. Interest Rate"), size=1)+
+  geom_line(aes(y=euro, color = "Exchange Rate (EUR)"), size=1)+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(x="Date",y="Amount", title="Weighted Interest Rates and Exchange Rate (EUR) in Turkey in 2013-2020") +
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  scale_x_date(date_labels =  "%Y")+
+    scale_colour_manual(values=c("mediumvioletred","royalblue1"))
+
+
+```
+
+To visualize the relation better, I preferred to use $‰$ instead of %. This time, we can see a high similarity between the two measures. For the first 2-3 years are almost the same; moreover, there are two peaks in both of the measures which happen on the same dates. Looking at the above graph, we can guess that there is a  strong relationship between these two, but again, we need a scientific explanation which will be provided with a correlation test:
+
 ```{r echo = FALSE, include = TRUE, message=FALSE}
 cor.test(corr_DT$`Weighted Int. Rate`, corr_DT$Euro)
 ```
@@ -409,21 +423,33 @@ This time, the p-value is very small which will allow us to reject the null hypo
 
 
 
-As it is mentioned above, we see that euro has a significant correlation between other three measures. This is not surprising since changes in exchange rates in open economies affects key economic indicators. According to my research: increases in the exchange rate initially increase exports and increase national income. In parallel with the increase in national income, the increase in the demand for money causes the interest rates to rise and vice versa. Despite the fact that we have not a significant correlation between interest rates and money supply, euro seems to affect all of these measures.
+As is mentioned above, we see that euro has a significant correlation between the other three measures. This is not surprising since changes in exchange rates in open economies affect key economic indicators. According to my research: increases in the exchange rate initially increase exports and increase national income. In parallel with the increase in national income, the increase in the demand for money causes the interest rates to rising and vice versa. Even though we have not a significant correlation between interest rates and money supply, the euro exchange rate seems to affect all of these measures.
 
 
 
 
 
 # Conclusion
-```{r}
-#conclusion is going to be added
-```
+In this study, the relationship between weighted interest rates and three other measures was discussed. These three measures were money supply in the Turkish Republic Central Bank, domestic borrowing of Turkey, and the exchange rate (EUR). Put differently, the research question was **"Are interest rates statistics related to exchange rates, domestic borrowing, the supply of money?"**. Data is taken from [EVDS](https://evds2.tcmb.gov.tr/) on a monthly level for the years from 2013 to 2020. Histograms, scatter plots and correlation analysis was used to comment on the relationship and explain the test results.
+
+* All being equal, the economy assumes that a larger money supply will increase interest rates. A larger money supply lowers market interest rates, making it less expensive for consumers to borrow. However, in the real-life, there is no "all being equal". Also, the correlation test showed that there is no significant relationship between these two. In short, the results are not surprising since we have not the chance to keep other factors constant in the real life. There seems there are a lot of other factors affecting the interest rates or money supply individually.
+
+* Secondly, it is stated that when saving are insufficient, interest rates are increased to find new debt. However, there was no significant relationship between these two measures according to the correlation analysis. In the data, there are some changes in the domestic borrowing level, yet the information in this data is not sufficient to tell if the debts is too much or savings are insufficient. We had just the amounts. Inadequacy is a relativistic term here, so we would need further information to prove this. The reason that domestic borrowing doesn't affect interest rates in this study might be telling us that "there are not too much borrowing that will affect the interest rate." These debts must have been found from another source. Last but not least, an 8-year period could be a short amount of time in order to investigate the changes in domestic borrowing.
+
+* Lastly, the relationship between interest rates and exchange rates are examined. Not surprisingly, the correlation was significant. The increase in the euro exchange rate is an important reason for the upward trend in inflation. When we look at the relationship between inflation and the dollar rate, it is stated that a change in exchange rates is reflected in prices. The rise in the exchange rate affects the prices of imported goods, especially in countries with high raw material and energy imports, the increase in the exchange rate is reflected in the final goods and an increase is observed in the general level of prices. In this case, as a precaution in order not to adversely affect the competitiveness of the country in the foreign market from the increase in inflation, a policy to reduce the value of the domestic currency may be implemented. This explains the increase in interest rates.
+
+* It seems that the exchange rate of the euro has a strong relationship with all the other measures. Since the exchange rate is one of the most important determinants of a country's relative level of economic health, this is an expected conclusion. Because all the measures that are studied in this homework are key terms in Turkey's economy and  economic health.
 
 
 
+**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework2.Rmd)**
 
+**References: **
 
+* [EVDS](https://evds2.tcmb.gov.tr/)
+* [STHDA](http://www.sthda.com/english/)
+* [Detailed Data Table](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html)
+* [Visualization](https://www.r-graph-gallery.com/index.html)
 
 
 
