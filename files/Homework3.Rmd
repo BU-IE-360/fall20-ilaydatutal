@@ -1,0 +1,354 @@
+---
+title: "Time Series Regression for Predicting Macroeconomic Indicators"
+author: "İlayda Tutal"
+date: "07 01 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+  In this study, the descriptive analysis performed up to this point is going to be extended using data from Data Delivery System of  Central Bank of the Republic of Turkey Electronic: [EVDS](https://evds2.tcmb.gov.tr/). Moreover, the main purpose of the study is forecasting an indicator at a monthly level. The data used for this study is *Consumer Price Index for Purchase of Vehicles* . In order to predict the December 2020, at least a few year's data is needed. In this study, data is taken from 2012 to 2020. 
+  
+  Additionally, necessary independent variables will be chosen according to some correlation analysis. Therefore, to start, exchange rate of euro and dollar, weighted interest rates of vehicle loans, and two survey data asking "What is your inflation expectation?" and "What is your "Your likelihood of buying a car in the next 12 months?" will be analyzed if they are correlated/meaningful to add the time series regression model or not. After adding the reasonable independent variables, according to the test statistics, necessary new variables such as lag values or seasonality could be added.
+
+  First of all, the data is taken from EVDS and manipulated. Lets see the first 10 rows:
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+library(readxl)
+library(data.table)
+library(lubridate)
+library(ggplot2)
+library(zoo)
+library(forecast)
+hw3data <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/hw3data.xlsx", 
+    n_max = 149)
+anket <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/anket.xlsx", 
+    n_max = 107)
+anket_enflasyon <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/anket_enflasyon.xlsx", 
+    n_max = 107)
+
+#I want to take after 2012
+hw3data <- hw3data[-c(1:42),]
+hw3data <- cbind(hw3data, anket[,2], anket_enflasyon[,2])
+
+
+colnames(hw3data) <- c("Date", "Vehicle_Purchase", "USD", "EUR", "Int_Rate", "Survey_Vehicle", "Survey_Inflation")
+hw3data <- data.table(hw3data)
+
+head(hw3data, 10)
+str(hw3data)
+
+
+```
+
+Since the Date column's type is chr, a manipulation is needed to have Date type for Date column:
+
+```{r echo = TRUE, include = TRUE, message=FALSE, warning=FALSE}
+hw3data$Date<-parse_date_time(hw3data[,Date], "Y-m")
+hw3data[,Date:=as.Date(Date,format='%Y-%m-%d')]
+str(hw3data)
+
+```
+
+# Analysis of the Target Variable: CPI for Purchase of Vehicles
+
+  After gathering dependent and all possible independent variables in a one data table, and before building the model, understanding the _CPI for  Purchase of Vehicle_ is crucial. According to its shape, necessary manipulations can be done.
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+ggplot(hw3data, aes(x=Date, y=Vehicle_Purchase, group = 1)) +
+  geom_line(size = 1, colour = "royalblue1") +
+  labs(title = "CPI for Vehicle Purchase 2012-2020", x = "Date", y = "CPI") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, size=9, hjust = 1))
+
+```
+ 
+ 
+  When it is plotted, an exponential behavior is observed. Therefore, taking the logarithm of our dependent variable might be helpful to prepare a good time series regression model since working with a linear trend is better for the study. Last but not least, a trend variable might be helpful as well since CPI increases in time. So, lets take the log of the data and plot it again:
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+hw3data[, log_Vehicle_Purchase := log(Vehicle_Purchase)]
+
+
+ggplot(hw3data, aes(x=Date, y=log_Vehicle_Purchase, group = 1)) +
+  geom_line(size = 1, colour = "royalblue1") +
+  labs(title = "CPI for Vehicle Purchase 2012-2020", x = "Date", y = "CPI") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, size=9, hjust = 1))
+
+
+
+
+```
+
+
+Obviously, it has a more linear shape than it had before and we can continue with the analysis of the candidate independent variables..
+
+
+# Analysis of Possible Independent Variables
+
+  As it is explained briefly in the introduction part,exchange rate of EUR and USD, weighted interest rates of vehicle loans, and a survey data asking "What is your inflation expectation?" will be analyzed. CPI of vehicle purchase, buying a car, car sales or car prices are generally affected from exchange rates obviously. Also many people take loans from banks to buy cars so interest rates are another important thing to consider for most of the people. If the interest rates are higher than they could afford, they might give up buying a car which would affect the car market in a long term. Inflation is considered with a survey data as an related variable since many people have to consider inflation similar to the interest rate case. Lastly, another survey about if one considers to buy in the following 12 months; however, this survey's question might be not so relevant since most of our data are monthly. Just to have an  overall idea and a first inspection, two different visualizations are done:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+ggplot(hw3data, aes(x=Date)) +
+  geom_line(aes(y=Vehicle_Purchase/10, color= "CPI - Vehicle Purchase"), size=1)+
+  geom_line(aes(y=EUR, color= "EUR"), size=0.75)+
+  geom_line(aes(y=USD, color = "USD"), size=0.75)+
+  geom_line(aes(y=Int_Rate, color = "Int Rate"), size=0.75)+
+  geom_line(aes(y=Survey_Vehicle, color = "Survey Vehicle"), size=0.75)+
+  geom_line(aes(y=Survey_Inflation, color = "Survey Inflation"), size=0.75)+
+  theme(axis.text.x = element_text(angle = 45))+
+  labs(x="Date",y="Amount", title="Possible independent variables (2012-2020)")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  scale_x_date(date_labels =  "%Y")+
+  scale_colour_manual(values=c("royalblue1", "green", "purple", "mediumvioletred","blue", "red", "pink"))
+```
+
+  From the graph we can see all candidate variables, amount axis is manipulated for some of them to see in together. Not surprisingly, EUR and USD seem to have a similar shape. Moreover, especially having the peaks at the similar time periods, interest rate and survey related to inflation are also seems related to the target variable. Last but not least, the other survey which was about _your likelihood of buying a car in the following 12 months_ seems irrelevant. This is not a surprise since the survey question is for the next 12 months. This variable has a very seasonal trend unlike the others. So, using it in the model might not be quite logical.
+  
+  Also, all can be seen separately and more clearly below:
+ 
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+ts_data <-ts(hw3data ,freq=12, start=c(2012, 1))
+str(ts_data)
+
+ts_data <- ts_data[,-1]
+colnames(ts_data)<-c("CPI", "USD", "EUR", "Int-Rate", "Survey-Veh", "Survey-Inf", "log CPI")
+
+plot(zoo(ts_data), col= "purple")
+```
+
+  Seeing separately, it is obvious that again, USD and EUR are very similar to the CPI (log(CPI)) line. Also, interest rates and survey about inflation seems similar to both each other and to CPI line. They might be helpful to explain the peaks of the CPI because they happened at the similar time. What has happened around that time and the explanation will be made in the following parts.
+  
+  Of course, deciding according to visualization of the data is not sufficient. A correlation plot will be more clear to compare them and decide better. The logarithm of the CPI- Purchase of vehicle and the correlations between other possible independent variables will be analyzed:
+
+
+
+## Correlation Analysis
+
+To see mathematical results of correlation analysis, a correlation matrix is built and plotted:
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+library(corrplot)
+corr_data<-cor(hw3data[,-1])
+corrplot(corr_data, method="number")
+
+```
+
+  As it is predicted from the visualization, survey about buying a vehicle seems the most irrelevant among others. Both USD and EUR are highly correlated with the CPI which is stated as "vehicle_purchase", but adding only one of them is enough and better for the model. To sum up, exchange rate of EUR, interest rate of vehicle loans, and the inflation survey will be added one by one into the model since they are highly correlated with the target variable.
+  
+  
+# Time Series Reggression
+
+  To start, chosen independent variables were added one by one, ending up with better results. 
+
+```{r echo = TRUE, include = TRUE, message=FALSE}
+
+fit=lm( log_Vehicle_Purchase ~ EUR + Int_Rate + Survey_Inflation, hw3data)
+summary(fit)
+checkresiduals(fit)
+
+
+```
+
+  By looking at the p value, it is safe to say the model is somehow good. Adjusted R-squared value is 0.93 which is not a bad value, although it is not enough to conclude the model is the best we can do. Residual standard error  is 0.09, which is aimed to be decreased as much as possible. Independent variables are seemed to be meaningful for this model. 
+  
+  Even though the model's p-value, residual standard error and adjusted R-square values are not bad, residual analysis done by 'checkresiduals' function tells more. It is assumed that *residuals are normally distributed with 0 mean and a constant variance* and *residuals are nor correlated*. The results of the Breusch-Godfrey test, p-value being so small means that reject the null hypothesis: residuals are not correlated. Moreover, in the residual analysis, first part shows the variance is not constant everywhere and mean is not zero exactly. In the second chart, blue dashed lines are represents the confidence interval for the autocorrelation values for each lag and exceeding the lines are the signals for us to have some problems. In other words, our residuals seems autocorrelated, which is not the best for our model and prediction. Moreover, residuals are not distributed normally.
+  
+  In the prior sections of the study, it is stated that CPI increases over time, so adding a trend might be meaningful and help us to have a better fit. The ACF graph above, supports this idea. So, a trend variable is added and fitted to the model.
+  
+  
+```{r echo = TRUE, include = TRUE, message=FALSE}
+#added a trend
+hw3data[, trend:= c(1:.N)]
+```
+  
+  
+```{r echo = FALSE, include = TRUE, message=FALSE}
+fit2=lm( log_Vehicle_Purchase ~ EUR + Int_Rate + Survey_Inflation + trend, hw3data)
+summary(fit2)
+checkresiduals(fit2)
+
+```
+  
+  
+  With this model, we have a lower residual standard error and higher adjusted R-squared value which means that this one is better. Breusch-Godfrey test still tells us to reject the residuals are not correlated because of the even smaller p-value; however, Looking at the 3 charts of residuals these analysis is made:
+  
+  * In the first chart, means are closer to the zero compare to the first model, but still don't have a constant variance. 
+  
+  * In the second chart, we have less autocorrelation values exceeding the blue lines; yet, still seems it needs to be handled.
+  
+  * In the third chart, again, seems a little more likely to a normal distribution compared to the first model, but it is not good enough to stop.
+  
+  
+  Since we still have high autocorrelation between residuals, adding a column for lag1 values with shifting one row and fitting into the model if it is correlated might help us to decrease autocorrelation between residuals.
+  
+  
+```{r echo = FALSE, include = TRUE, message=FALSE}
+#adding lag1 with shifting
+trydata <- hw3data[-1,]
+#trydata <- trydata[c(1:106),]
+lag1 <- lag( residuals(fit2))
+lag1 <- lag1[1:106]
+trydata <- cbind(trydata, lag1)
+fittry=lm( log_Vehicle_Purchase ~ EUR + Int_Rate + Survey_Inflation + trend + lag1, trydata)
+summary(fittry)
+checkresiduals(fittry)
+
+
+
+
+```
+
+Adding lag1 as independent variable results a residual stantdard error as 0.02, an adjusted R-squared value as: 0.99 which seems a better model, yet not enough alone.
+
+When we check the Breusch-Godfrey test, we can safely say that there is no autocorrelation between residuals. Also, in the residuals plots, residuals seem to have 0 mean. Variance is not perfectly constant everywhere, but has not big differences. ACF plot seems unproblematic unsurprisingly since we have the p-value of Breusch-Godfrey test as 0.33. Since we cannot have the perfectly constant variance, and some outliers, residuals seems not perfectly normal. But again, this last model is the best one so far.
+
+So, the actual vs fitted data plot:
+
+```{r echo = FALSE, include = TRUE, message=FALSE}
+
+reg_data=data.table(Data = trydata[,"log_Vehicle_Purchase"],Fitted = fitted(fittry))
+ggplot(reg_data ,aes(x=Data.log_Vehicle_Purchase , y=Fitted)) +
+ geom_point(color="purple") +
+ ylab("Fitted") +
+ xlab("Actual") +
+ ggtitle("Consumer Price Index of Vehicle Purchase 2012-2020") +
+ geom_abline(intercept=0, slope=1)
+
+```
+
+From this actual vs predicted plot, we can observe that the regression model is successful even though some points have some larger variances. Analyzing the each independent variable with residuals might show us a new way to develop the model.
+
+# Residual vs Predictor Plots
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning==FALSE}
+df <- trydata
+df[,"Residuals"] <- as.numeric(residuals(fittry))
+p1 <- ggplot(df, aes(x=EUR, y=Residuals)) +
+ geom_point(color="mediumvioletred")
+p2 <- ggplot(df, aes(x=Int_Rate, y=Residuals)) +
+ geom_point(color="mediumvioletred")
+p3 <- ggplot(df, aes(x=Survey_Inflation, y=Residuals)) +
+ geom_point(color="mediumvioletred")
+p4 <- ggplot(df, aes(x=trend, y=Residuals)) +
+ geom_point(color="mediumvioletred")
+p5 <- ggplot(df, aes(x=lag1, y=Residuals)) +
+ geom_point(color="mediumvioletred")
+
+gridExtra::grid.arrange(p1, p2, p3, p4, p5, nrow=2)
+
+
+```
+
+
+It is good to have residuals close to the zero. Seeing some obvious patterns are led me to do some manipulations or add a new column to handle this situations. However, sincerely, I added many new predictors to solve this problem. For example: I tried to exclude some outliers below and above the %5 and %95 quantile like it is done in the class; however, adding many new predictors concluded a worse model and ACF plot and I decided to continue with this model.
+
+Overall fitted vs residual plot is below:
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+trydata[,fitted:=fitted(fittry)]
+trydata[,residual:=residuals(fittry)]
+
+
+  ggplot(trydata, aes(x=fitted, y=residual)) +
+  geom_point(color="purple") +
+  theme_minimal()+
+    labs(title = "Fitted vs Residuals", 
+       x = "Fitted",
+       y = "Residual")
+
+
+
+
+```
+
+There is not a obvious pattern, some outliers seems problematic like explained above.
+
+# Prediction
+
+Adding fitted values to the data, we can compare the actual vs fitted values month by month. 
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning= FALSE}
+#get forecasts for next month 
+trydata[,fitted:=fitted(fittry)]
+trydata[,residual:=residuals(fittry)]
+
+#added a new row for the prediction
+trydata=rbind(trydata,data.table(Date=as.Date("2020-12-01")),fill=T)   
+
+trydata[is.na(EUR)==T,EUR:= 9.38]
+trydata[is.na(Int_Rate)==T,Int_Rate:= 17.15]
+trydata[is.na(Survey_Inflation)==T,Survey_Inflation:= 16.20]
+trydata[is.na(trend)==T,trend:= 108]
+trydata[is.na(lag1)==T,lag1:= 0.0045392612 ]
+
+prediction <- predict(fittry, trydata[is.na(fitted)==T])
+trydata[is.na(fitted)==T,fitted:=prediction]
+
+
+cols <- c("predicted" = "purple", "actual" = "royalblue")
+#ggplot() + 
+#  geom_line(data = trydata, aes(x = Date, y = fitted,color = "predicted"), size=1) +
+#  geom_line(data = trydata, aes(x = Date, y = log_Vehicle_Purchase,color = "actual"),  size=1) +
+#  xlab('time') +
+#  ylab('log_Vehicle_Purchase') +
+#  theme_minimal() +
+#  scale_color_manual(values = cols)
+
+#took the exp again since we applied log at the beginning
+trydata[,predicted_CPI:=exp(fitted)]
+trydata[,actual_CPI:=exp(log_Vehicle_Purchase)]
+
+ggplot() + 
+  geom_line(data = trydata, aes(x = Date, y = predicted_CPI, color = "predicted"), size=0.75) +
+  geom_line(data = trydata, aes(x = Date, y = actual_CPI, color = "actual"), size=0.75) +
+  labs(title = "Fitted vs Actual", x = "Time", y = "CPI of Vehicle Purchase") +
+  theme_minimal() +
+  scale_color_manual(values = cols)
+
+
+
+```
+
+## Predicted Value for December 2020
+
+
+Last but not least, we need to take exp of prediction since we took the log of our target variable at the very beginning.
+
+```{r echo = TRUE, include = TRUE, message=FALSE, warning=FALSE}
+
+exp(prediction)
+
+```
+
+# Conclusion
+
+In this study, Consumer Price index for Purchase of Vehicle is analyzed and predicted. CPI for Purchase of Vehicle has an exponentially increasing trend by and large. To have a more linear shape, first, it's log is taken. After that, research are done to find some candidate predictors/independent variables. With the help of the research done and correlation analysis, exchange rate of Euro, weighted interest rates for vehicle loans, a survey data related to people's expectation of inflation rate, and a trend are used to fit the model. Also, to handle high correlation between residuals, a lag1 column which is the one row shifted lag values of residuals is added. After having a better model, residual analysis is done to see if we can do more improvements. Marking the points above and below the %5 and %95 quantiles seems logical and were tried. However, this did not conclude a better way as it was expected.
+
+Assumptions such as residuals have zero mean and constant variance are not violated, tried to be modeled as well as possible. Residuals have no obvious pattern and scattered randomly as they are wanted to be. Plot of the predicted vs actual values indicates that up to 2019, predicted values are much more better than after 2019. Lastly, in the last quarter of the 2018, we see a peak in most of the measures. In the September 2018, because of the Priest Brunson case, the tension between Turkey and Us affected the markets, caused corruptions in especially in basic indicators such as exchange rate and interest rate. After that time, the model seems a little corrupted as well. 
+
+
+**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework3.Rmd)**
+
+**References: **
+
+* [EVDS](https://evds2.tcmb.gov.tr/)
+* [STHDA](http://www.sthda.com/english/)
+* [Visualization](https://www.r-graph-gallery.com/index.html)
+
+
+
+

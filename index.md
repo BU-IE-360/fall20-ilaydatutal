@@ -10,3 +10,6 @@
 
 ## Week 5 - Homework 2 (11.12.2020)
 [Here](files/Homework2.html) is my time series data visualization and correlation study using R!
+
+## Week 10 - Homework 3 (07.01.2021)
+[Here](files/Homework3.html) is my time series data visualization and correlation study using R!
