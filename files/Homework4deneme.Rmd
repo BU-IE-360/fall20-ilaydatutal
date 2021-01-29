@@ -1,0 +1,382 @@
+---
+title: "Homework4deneme"
+author: "İlayda"
+date: "25 01 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+  In this study, electricity consumption in Turkey data, which is a non-stationary time series, is aimed to be transformed to a stationary one and make a 2-week long daily prediction with this stationary data. The data is taken from the [EPİAŞ website](https://seffaflik.epias.com.tr/transparency/) as hourly data. To make this transformation, time series data will be analyzed; therefore, differencing, decomposition, necessary tests will be used when needed to reach a "good" model. Detailed explanations will be provided in the related parts. After choosing the best model, predictions will be done y using this model.
+  
+   Model's residuals should:
+  * have zero mean and constant variance.
+  * normally distributed.
+  * and not be autocorrelated.
+  
+  From beginning of the 2017, to 8-Jan-2021 is used as train data; therefore the 2-week period which will be estimated is 9-Jan-2021 to 22-Jan-2021.
+  
+ 
+# Analysis
+
+## Data Manipulation
+First, data is imported and transformed into a data.table and the necessary manipulations are done such as: converting the Date column's type to "Date" from "chr", converting the data to a mean consumption data since daily predictions will be made, not hourly.
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+library(lubridate)
+library(ggplot2)
+library(readxl)
+library(data.table)
+library(forecast)
+library(urca)
+library(fpp)
+
+consumption_data <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/hw4data.xls")
+consumption <- consumption_data$consumption
+no_of_days <- length(consumption) / 24
+mean_consumption <- c()
+
+
+j = 1
+for(i in 1: no_of_days){
+   mean_consumption[i] <- mean( consumption[c(j:(j+23))] )
+   j <- j+24
+}
+head(mean_consumption)
+
+length(mean_consumption)
+
+
+start_date <- as.Date("2017-01-01")
+date <- seq(as.Date("2017-01-01"), as.Date("2021-01-08"), by="days")
+
+consumption_dt <- data.table("Date"= date, "mean_consumption"= mean_consumption)
+
+```
+
+So, we can see the first and last 5 rows of the data, and the overall mean consumption:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+head(consumption_dt)
+tail(consumption_dt)
+
+plot(consumption_dt$mean_consumption, type="l", col="2")
+
+
+```
+
+As it is expected, the daily consumption data seems to have a seasonality, it is time dependent which is not the case for stationary data. To be make sure and further anaysis, let's see the ACF, PACF and also apply the unit root test. Unit root test will test if the daily consumption is stationary or not. The null hypothesis is: it's stationary. The alternative hypothesis is: it's not stationary. So, we need to reject the null hypothesis, we need a low test-statistic value.
+If it will be high, we might need a differencing.
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+acf(consumption_dt$mean_consumption, col= "#CC3366", lwd=2)
+#lag 7 gözle görülebilir.
+pacf(consumption_dt$mean_consumption, col="#CC33CC", lwd=2)
+
+summary(ur.kpss(consumption_dt$mean_consumption))
+```
+
+ACF plot shows the seasonality clearly. Although the test statistics of the KPSS unit root test is not higher than the critical values, taking the difference might help to decrease this value. Therefore, the daily consumption are shifted by 7 rows and taken the difference. This might be problematic in the prediction part since 14 days should be predicted, but this problem can be handled and an alternative model could be developed. Here is the plot of the new column:
+
+```{r echo = TRUE, include = TRUE, message=FALSE, warning=FALSE}
+consumption_dt[,lag_7:=shift(mean_consumption,7)]
+consumption_dt[,diff_7:=mean_consumption-lag_7 ]
+difference <- consumption_dt$diff_7
+
+ggplot(consumption_dt, aes(x=Date, y=diff_7)) + geom_line(size = 0.7, color="purple") + 
+  labs(title = "Difference of the Shifted Daily Consumption", x = "Date", y = "Amount") + 
+  theme_minimal()
+
+
+```
+```{r}
+
+acf <- acf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=2)
+pacf <- pacf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=2)
+#acf <- ggAcf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=1) 
+#pacf <- ggPacf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=1)
+#gridExtra::grid.arrange(acf, pacf)
+
+
+```
+
+```{r}
+
+summary(ur.kpss(difference))
+```
+
+
+So, taking the difference helped us to get smaller test statistic which was desired! We can say that we cannot reject the null hypothesis, the data is stationary now. Let's decompose it with the type "additive", and fit the randoms into a arima model. In this part, auto.arima function is used to find the best model.
+
+## Model with Differencing
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+ts <- ts(consumption_dt$diff_7 ,freq=7)
+#bu diffi ts yaptım decompose edebilmek için
+
+data_add<-decompose(ts,type="additive")
+plot(data_add) 
+```
+
+
+After decomposition, here the plots of the additive model's random values and the model that auto.arima found for us:
+
+
+
+```{r  echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+random <- data_add$random
+tsdisplay(random)
+auto.arima(random)
+```
+
+
+
+And the results of the model:
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+model<-arima(random,order=c(0,0,1),seasonal = c(0,0,1))
+summary(model)
+```
+
+# Forecasting with the Model for Differenced Data
+
+In this part, a prediction is going to be made before trying another model. As it is mentioned before, shifting is done with 7 rows; so, we can predict at most 7 rows (7 days) now. To handle this situation, at first, 7 days are predicted. Then, it is assumed that the actual values of this 7 days are %5 more that we predicted. With this assumption, now we can make a 7-day forecast again. Which is actually the second half of our aimed 14-day period.
+
+The %5 assumption is made by observing the cyclic pattern of the last weeks.
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+ts_random = ts(data_add$random, freq = 7)
+model <- arima(ts_random, order=c(0, 0, 1), seasonal = c(0, 0, 1))
+model_forecast <- predict(model, n.ahead = 14)$pred
+
+last_trend_value <-as.numeric(rep(tail(data_add$trend[!is.na(data_add$trend)],1),14))
+seasonality=as.numeric(tail(data_add$seasonal,14))
+
+model_forecast = model_forecast + last_trend_value + seasonality
+
+#we need to add lag_7 values
+firstweek <- model_forecast[c(1:7)] + tail(consumption_dt$lag_7, 7)
+
+length <- length(consumption_dt$lag_7)
+#plot(consumption_dt$lag_7[c((length-28):length)], type="l")
+
+ x <- consumption_dt$lag_7[c((length-6):length)] + 0.05*(consumption_dt$lag_7[c((length-13):(length-7))])
+
+secondweek <- model_forecast[c(8:14)] + x
+
+
+nahead = 14
+temporary=copy(consumption_dt[,c(1:2)])
+
+test=consumption_dt[1:nahead, c(1:2)]
+test[,mean_consumption:=NA]
+test$Date=max(consumption_dt$Date)+c(1:nahead)
+test[,predicted:=NA]
+test$predicted[1:7] <- firstweek
+test$predicted[8:14] <- secondweek
+temporary=rbindlist(list(temporary,test),fill=T,use.names=T)
+
+```
+
+## Comparing with the Actual Values
+
+In this part, actual data is taken and compared with the help of a function which provides us statistics such as MAPE, MAD and so on. Also the forecasted part is plotted:
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+
+X14daysreal <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/14daysreal.xls")
+j = 1
+mean_14days <- c()
+for(i in 1: 14){
+   mean_14days[i] <- mean( X14daysreal$`Tüketim Miktarı (MWh)`[c(j:(j+23))] )
+   j <- j+24}
+
+
+date2 <- seq(as.Date("2021-01-09"), as.Date("2021-01-22"), by="days")
+x14daysreal <- data.table("Date" = date2 , "Mean_14_days" = mean_14days)
+
+
+accu <- function(actual, forecasted){
+  n=length(actual)
+  error = actual-forecasted
+  mean=mean(actual)
+  sd=sd(actual)
+  bias = sum(error)/sum(actual)
+  mape = sum(abs(error/actual))/n
+  mad = sum(abs(error))/n
+  wmape = mad/mean
+  l = data.frame(n,mean,sd,bias,mape,mad,wmape)
+  return(l)
+}
+
+
+x14daysreal <- x14daysreal[, predictions:=test$predicted]
+x14daysreal[,accu(Mean_14_days, predictions)] 
+
+
+colors=c("pink", "royalblue")
+
+ggplot(x14daysreal)+
+  geom_line(aes(x=Date,y=Mean_14_days,color="Actual"),size=1)+
+  geom_line(aes(x=Date,y=predictions,color="Forecasted"),size=1)+
+  scale_color_manual(values = colors)+
+  theme_minimal() +
+  labs(x="Date",y="Mean Consumption",
+       title="Actual and Forecasted Values", color="Consumption")
+
+
+```
+
+# Modeling without Differencing
+
+The model obtained in the previous part might not be the best, so let's try another approach. I will decompose it again but to find the arima model, I will continue step by step trying to find which AR and MA order will be the best.
+
+```{r}
+#plot(consumption_dt$mean_consumption, type="l", col="2")
+
+#summary(ur.kpss(consumption_dt$mean_consumption))
+
+consumption_ts <- ts(consumption_dt$mean_consumption, start=c(2017,1), freq=7)
+
+decomposed <- decompose(consumption_ts, type="additive")
+random <- decomposed$random
+tsdisplay(random)
+```
+
+
+By looking at the random values' acf and pacf plots, we can see the gradual decay in the PACF which is a sign for MA model. MA(1) or MA(3) can be tried:
+```{r}
+model1 <- arima(random, order=c(0,0,1))
+model1
+tsdisplay(residuals(model1))
+```
+
+
+Now a similar situation, let's add MA(3):
+```{r}
+
+model2 <- arima(random, order=c(0,0,3))
+model2
+tsdisplay(residuals(model2))
+
+
+```
+
+
+Results are better but there is still AR affect we can add. Try AR(2):
+
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+model3 <- arima(random, order=c(2,0,3))
+model3
+tsdisplay(residuals(model3))
+
+```
+
+Both plots and test statistic tells us we have reached the best model so far! We have the smallest AIC value. So, I will choose this model.
+
+
+
+# Choosing the Best Model 
+ Last model from previous par is chosen.
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+model_fitted2 <- random - residuals(model3)
+model_fitted_transformed2 <- model_fitted2 + decomposed$trend + decomposed$seasonal
+
+plot(consumption_ts, xlab = "Time Index", ylab = "Mean Consumption",main="Actual and Fitted Values")
+points(model_fitted_transformed2, type = "l", col = 2, lty = 2)
+
+
+```
+# Forecasting with the ARIMA(2,0,3)
+
+We can forecast now:
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+model_forecast2 <- predict(model3, n.ahead = 14)$pred
+
+last_trend_value2 <-as.numeric(rep(tail(decomposed$trend[!is.na(data_add$trend)],1),14))
+seasonality2=as.numeric(tail(decomposed$seasonal,14))
+
+model_forecast2 = model_forecast2 + last_trend_value2 + seasonality2
+
+
+
+nahead = 14
+temporary2 = copy(consumption_dt[,c(1:2)])
+
+test2 = consumption_dt[1:nahead, c(1:2)]
+test2[,mean_consumption := NA]
+test2$Date = max(consumption_dt$Date) + c(1:nahead)
+test2[, predicted := NA]
+test2$predicted[1:14] <- model_forecast2[c(1:14)]
+temporary2 = rbindlist(list(temporary2, test2),fill=T,use.names=T)
+
+
+
+```
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+
+X14daysreal2 <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/14daysreal.xls")
+#I already calculated mean of these 14 days
+
+date2 <- seq(as.Date("2021-01-09"), as.Date("2021-01-22"), by="days")
+x14daysreal2 <- data.table("Date" = date2 , "Mean_14_days" = mean_14days)
+
+
+
+
+x14daysreal2 <- x14daysreal2[, predictions:=test2$predicted]
+x14daysreal2[,accu(Mean_14_days, predictions)] 
+
+
+colors=c("pink", "royalblue")
+
+ggplot(x14daysreal2)+
+  geom_line(aes(x=Date,y=Mean_14_days,color="Actual"),size=1)+
+  geom_line(aes(x=Date,y=predictions,color="Forecasted"),size=1)+
+  scale_color_manual(values = colors)+
+  theme_minimal() +
+  labs(x="Date",y="Mean Consumption",
+       title="Actual and Forecasted Values", color="Consumption")
+
+
+
+
+
+
+
+```
+# Conclusion
+
+The data is transformed into a stationary data and 2 alternative models are built. The one with the lowest AIC value is chosen and predictions are made.14 day period is predicted and seen. And lastly, the whole data:
+
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
+allinone <- temporary2
+colors<-c("Actual" = "2", "Forecasted" = "limegreen")
+
+ggplot(allinone)+
+  geom_line(aes(x=Date,y=mean_consumption,color="Actual"))+
+  geom_line(aes(x=Date,y=predicted,color="Forecasted"))+
+  scale_color_manual(values = colors)+
+  theme_minimal() +
+  labs(x="Date",y="Mean Consumption",
+       title="Actual and Forecasted Values", color="Consumption")
+
+```
+
+
+
+
+
