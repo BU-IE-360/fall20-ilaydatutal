@@ -1,0 +1,97 @@
+---
+title: "Untitled"
+author: "İlayda"
+date: "23 01 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+```{r}
+library(data.table)
+library(readxl)
+library(fpp)
+library(forecast)
+
+consumption <- read_excel("C:/Users/ilos3/Desktop/BOUN/Fall2020/IE 360/hw4data.xls")
+consumption <- consumption$consumption
+
+no_of_days <- length(consumption) / 24
+mean_consumption <- c()
+
+
+j = 1
+
+for(i in 1: no_of_days){
+   mean_consumption[i] <- mean( consumption[c(j:(j+23))] )
+   j <- j+24
+}
+head(mean_consumption)
+
+length(mean_consumption)
+
+
+consumption_ts <- ts(mean_consumption, start=c(2017,1,1),freq=365.25)
+length(consumption_ts)
+
+ts.plot(consumption_ts,xlab = "Year", ylab = "Drug Sales",main="Drug Sales(1995-2008)")
+acf(consumption_ts,xlab = "Year", ylab = "Drug Sales",main="Drug Sales(1995-2008)")
+acf(consumption_ts,xlab = "Year", ylab = "Drug Sales",main="Drug Sales(1995-2008)")
+pacf(consumption_ts)
+#Box.test(consumption_ts, lag=7, type ="Ljung-Box")
+
+data_multip<-decompose(consumption_ts,type="multiplicative")
+plot(data_multip)
+
+#data_add<-decompose(tsdata,type="additive")
+#plot(data_add) 
+
+
+deseasonalized<-consumption_ts/data_multip$seasonal
+ts.plot(deseasonalized) #there is still trend
+acf(deseasonalized)
+
+detrend<-deseasonalized/data_multip$trend
+ts.plot(detrend)
+acf(detrend, na.action = na.pass)
+#no significant autocorrelation
+
+random <- data_multip$random
+acf(random, na.action = na.pass)
+#7lik diff alarak halledeiliriz
+plot(data_multip$random)
+auto.arima(data_multip$random)
+model <- arima(random, order= c(5,1,2))
+model_fitted <- random - residuals(model)
+model_fitted_transformed <- model_fitted * data_multip$trend * data_multip$seasonal
+
+
+plot(random, xlab = "Year", ylab = "Random Term",main="")
+points(model_fitted, type = "l", col = 2, lty = 2)
+
+plot(consumption_ts, xlab = "Year", ylab = "",main="")
+points(model_fitted_transformed, type = "l", col = 2, lty = 2)
+
+model_forecast <- predict(model, n.ahead = 14)$pred
+model_forecast=ts(model_forecast,frequency = 365.25,start=c(2021,1,9))
+
+
+
+#use last trend value
+last_trend_value <-tail(data_multip$trend[!is.na(data_multip$trend)],1)
+seasonality=data_multip$seasonal[9:22]
+#back to the original series
+model_forecast=model_forecast*last_trend_value*seasonality
+
+plot(consumption_ts, xlab = "Year", ylab = "",main="")
+points(model_fitted_transformed, type = "l", col = 2, lty = 2)
+points(model_forecast, type = "l", col = 3)
+
+
+
+```
+
