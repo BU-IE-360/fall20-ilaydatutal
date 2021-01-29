@@ -358,6 +358,7 @@ ggplot(x14daysreal2)+
 
 
 ```
+
 # Conclusion
 
 The data is transformed into a stationary data and 2 alternative models are built. The one with the lowest AIC value is chosen and predictions are made.14 day period is predicted and seen. And lastly, the whole data:
