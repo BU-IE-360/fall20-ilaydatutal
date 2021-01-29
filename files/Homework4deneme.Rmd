@@ -95,7 +95,7 @@ ggplot(consumption_dt, aes(x=Date, y=diff_7)) + geom_line(size = 0.7, color="pur
 
 
 ```
-```{r}
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
 
 acf <- acf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=2)
 pacf <- pacf(consumption_dt$diff_7, na.action = na.pass, lag.max = 60, col= "#CC33CC", lwd=2)
@@ -238,7 +238,7 @@ ggplot(x14daysreal)+
 
 The model obtained in the previous part might not be the best, so let's try another approach. I will decompose it again but to find the arima model, I will continue step by step trying to find which AR and MA order will be the best.
 
-```{r}
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
 #plot(consumption_dt$mean_consumption, type="l", col="2")
 
 #summary(ur.kpss(consumption_dt$mean_consumption))
@@ -252,7 +252,7 @@ tsdisplay(random)
 
 
 By looking at the random values' acf and pacf plots, we can see the gradual decay in the PACF which is a sign for MA model. MA(1) or MA(3) can be tried:
-```{r}
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
 model1 <- arima(random, order=c(0,0,1))
 model1
 tsdisplay(residuals(model1))
@@ -260,7 +260,7 @@ tsdisplay(residuals(model1))
 
 
 Now a similar situation, let's add MA(3):
-```{r}
+```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
 
 model2 <- arima(random, order=c(0,0,3))
 model2
@@ -373,6 +373,8 @@ ggplot(allinone)+
   theme_minimal() +
   labs(x="Date",y="Mean Consumption",
        title="Actual and Forecasted Values", color="Consumption")
+
+
 
 ```
 
