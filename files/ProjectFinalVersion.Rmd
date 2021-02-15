@@ -838,8 +838,8 @@ Lecture notes and presentations were the main source used in the modeling phase 
 
 The R Markdown file of the report and the code used for submissions can be reached by clicking the following links:
 
-* [R Markdown File](https://bu-ie-360.github.io/fall20-ilaydatutal/files/ProjectFinalVersion.Rmd).
-* [Code for Submissions](https://bu-ie-360.github.io/fall20-ilaydatutal/files/submissionkodu.R).
+* [R Markdown File](https://bu-ie-360.github.io/fall20-ilaydatutal/files/ProjectFinalVersion.Rmd)
+* [Code for Submissions](https://bu-ie-360.github.io/fall20-ilaydatutal/files/submissionkodu.R)
 
 
 
