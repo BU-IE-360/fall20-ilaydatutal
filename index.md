@@ -16,3 +16,6 @@
 
 ## Week 13 - Homework 4 (29.01.2021)
 [Here](files/Homework4deneme.html) is my time series data visualization and correlation study using R!
+
+## Project Report: Forecasting the Hourly Electricity Consumption in Turkey (15.02.2021)
+[Here](files/ProjectFinalVersion.html) is our project report of forecasting the hourly electricity consumption in Turkey!
