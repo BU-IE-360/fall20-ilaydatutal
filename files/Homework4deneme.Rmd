@@ -1,6 +1,6 @@
 ---
-title: "Homework4deneme"
-author: "İlayda"
+title: "Stationarity of Turkish Electricity Consumption Data"
+author: "İlayda Tutal"
 date: "25 01 2021"
 output: html_document
 ---
@@ -285,8 +285,10 @@ Both plots and test statistic tells us we have reached the best model so far! We
 
 
 
+
 # Choosing the Best Model 
- Last model from previous par is chosen.
+ Last model from previous part is chosen.
+ 
 ```{r echo = FALSE, include = TRUE, message=FALSE, warning=FALSE}
 
 model_fitted2 <- random - residuals(model3)
@@ -297,6 +299,8 @@ points(model_fitted_transformed2, type = "l", col = 2, lty = 2)
 
 
 ```
+
+
 # Forecasting with the ARIMA(2,0,3)
 
 We can forecast now:
@@ -380,6 +384,6 @@ ggplot(allinone)+
 ```
 
 
-
+**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework4deneme.Rmd)**
 
 
