@@ -384,6 +384,7 @@ ggplot(allinone)+
 ```
 
 
-**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework4deneme.Rmd)**
+
+**For the rmd file and codes of this report [click](https://bu-ie-360.github.io/fall20-ilaydatutal/files/Homework4deneme.Rmd)**   
 
 
