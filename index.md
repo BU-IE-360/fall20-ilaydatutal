@@ -1,6 +1,6 @@
-# Fatma Ilayda Tutal Progress Journal in IE360
+# Fatma Ilayda Tutal Progress Journal
 
-## Week 0 - Homework 0 (28.10.2020)
+## Week 0 - (28.10.2020)
 
 [Here](files/interesting_examples.html) is my 5 interesting R examples!
 
